@@ -1,0 +1,3 @@
+name: PlayerSync
+version: 0.1-SNAPSHOT
+main: playersync.bukkit.PlayerSyncBukkit
