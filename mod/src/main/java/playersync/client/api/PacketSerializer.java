@@ -13,10 +13,11 @@ public interface PacketSerializer<T> {
 
     PacketSerializer<PacketBuffer> RAW = new PacketSerializer<PacketBuffer>() {
         @Override
-        public void serialize(PacketBuffer object, PacketBuffer packetBuffer) {
+        public void serialize(@Nonnull PacketBuffer object, @Nonnull PacketBuffer packetBuffer) {
             packetBuffer.writeBytes(object);
         }
 
+        @Nonnull
         @Override
         public PacketBuffer deserialize(PacketBuffer packetBuffer) {
             return new PacketBuffer(packetBuffer.copy());

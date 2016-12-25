@@ -38,11 +38,12 @@ public class ClientSyncManager implements SyncManager {
 
     private void sendHelloPacket(@Nonnull NetHandlerPlayClient client) {
 
-        logger.info("Saying hello");
         PacketBuffer buffer = new PacketBuffer(Unpooled.buffer());
         buffer.writeString(REGISTER);
         buffer.writeVarInt(channels.size());
-        channels.forEach(buffer::writeString);
+        for (String channel : channels) {
+            buffer.writeString(channel);
+        }
 
         client.sendPacket(new CPacketCustomPayload(CHANNEL, buffer));
     }

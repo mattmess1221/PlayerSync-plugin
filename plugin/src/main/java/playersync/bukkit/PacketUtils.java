@@ -1,4 +1,4 @@
-package playersync;
+package playersync.bukkit;
 
 import com.google.common.primitives.Longs;
 
@@ -77,16 +77,6 @@ public class PacketUtils {
         }
 
         buffer.write((byte) input);
-    }
-
-    public static UUID readUUID(ByteArrayInputStream buffer) throws IOException {
-        byte[] bytes = new byte[16];
-        buffer.read(bytes);
-        long most = Longs.fromByteArray(bytes);
-        buffer.read(bytes);
-        long least = Longs.fromByteArray(bytes);
-
-        return new UUID(most, least);
     }
 
     public static void writeUUID(ByteArrayOutputStream buffer, UUID uuid) throws IOException {
