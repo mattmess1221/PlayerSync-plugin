@@ -38,4 +38,15 @@ public class SpongeSync extends PlayerSync {
         Player player = Sponge.getServer().getPlayer(uniqueId).orElseThrow(PlayerNotFoundException::new);
         channel.sendTo(player, (Message) msg);
     }
+
+    @Override
+    protected void sendAckToPlayer(UUID uniqueId) throws PlayerNotFoundException {
+        Player player = Sponge.getServer().getPlayer(uniqueId).orElseThrow(PlayerNotFoundException::new);
+        channel.sendTo(player, new AckData());
+    }
+
+    @Override
+    protected ChannelData newChannelData(String channel) {
+        return new ChannelDataMessage(channel);
+    }
 }

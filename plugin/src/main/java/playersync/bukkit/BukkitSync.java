@@ -3,6 +3,7 @@ package playersync.bukkit;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import playersync.Constants;
 import playersync.PlayerNotFoundException;
 import playersync.PlayerSync;
 import playersync.data.ChannelData;
@@ -44,6 +45,22 @@ public class BukkitSync extends PlayerSync {
             e.printStackTrace();
         }
 
+    }
+
+    @Override
+    protected void sendAckToPlayer(UUID uniqueId) throws PlayerNotFoundException {
+        Player pl = Bukkit.getPlayer(uniqueId);
+        if (pl == null) {
+            throw new PlayerNotFoundException();
+        }
+
+        pl.sendPluginMessage(plugin, CHANNEL, createAckData());
+    }
+
+    private byte[] createAckData() {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PacketUtils.writeString(out, Constants.ACKNOWLEDGE);
+        return out.toByteArray();
     }
 
     private byte[] encodeData(ChannelData data) throws IOException {

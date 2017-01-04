@@ -21,6 +21,3 @@ dependencies {
     compile 'org.spongepowered:spongeapi:5.0.0'
     compile 'org.bukkit:bukkit:1.11-R0.1-SNAPSHOT'
 }
-jar {
-    classifier 'plugin'
-}

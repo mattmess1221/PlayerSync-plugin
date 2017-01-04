@@ -46,6 +46,8 @@ public class ClientSyncManager implements SyncManager {
         }
 
         client.sendPacket(new CPacketCustomPayload(CHANNEL, buffer));
+
+        onHelloResponse();
     }
 
     private void onHelloResponse() {
@@ -58,7 +60,7 @@ public class ClientSyncManager implements SyncManager {
     public <T> void onPayload(PacketBuffer buffer) {
         String chan = buffer.readString(20);
         if (ACKNOWLEDGE.equals(chan)) {
-            onHelloResponse();
+            sendHelloPacket(client);
             return;
         }
         if (!this.channels.contains(chan)) {
@@ -116,9 +118,6 @@ public class ClientSyncManager implements SyncManager {
     }
 
     public void setClient(@Nonnull NetHandlerPlayClient client) {
-
         this.client = client;
-
-        this.sendHelloPacket(client);
     }
 }

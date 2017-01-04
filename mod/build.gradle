@@ -10,7 +10,9 @@ minecraft {
     runDir = "run"
 }
 
-
+litemod.json {
+    name = "playersync"
+}
 jar {
 	baseName "mod-$project.archivesBaseName"
     from litemod

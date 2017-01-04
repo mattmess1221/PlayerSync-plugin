@@ -28,6 +28,7 @@ public class PlayerSyncSponge {
     public void onServerStart(GameInitializationEvent event) {
         ChannelBinding.IndexedMessageChannel channel = Sponge.getChannelRegistrar().createChannel(this, CHANNEL);
         channel.registerMessage(ChannelDataMessage.class, 1);
+        channel.registerMessage(AckData.class, 1);
         channel.addHandler(ClientDataMessage.class, sync::handlePacket);
         this.sync = new SpongeSync(channel);
     }
