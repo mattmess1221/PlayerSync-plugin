@@ -1,7 +1,7 @@
 apply plugin: 'net.minecraftforge.gradle.liteloader'
 
 archivesBaseName = 'playersync-client'
-version = '0.2'
+version = '0.3'
 group = 'psync'
 
 minecraft {
