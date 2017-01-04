@@ -12,15 +12,23 @@ public abstract class PlayerSync implements Constants {
     private Map<UUID, Set<String>> playerChannels = new HashMap<>();
     private Map<String, Map<UUID, byte[]>> channels = new HashMap<>();
 
+    protected abstract void sendAckToPlayer(UUID uniqueId) throws PlayerNotFoundException;
+
     protected abstract void sendMessageToPlayer(UUID uniqueId, ChannelData msg) throws PlayerNotFoundException;
 
     public void handlePacket(UUID uniqueId, ClientData buf) throws IOException {
-
         String channel = buf.getChannel();
 
         if (REGISTER.equals(channel)) {
-            Set<String> channels = getPlayerChannels(uniqueId);
-            channels.addAll(buf.getRegistrations());
+            Set<String> playerChannels = getPlayerChannels(uniqueId);
+            playerChannels.addAll(buf.getRegistrations());
+            try {
+                for (String chan : playerChannels) {
+                    ChannelData bytes = new ChannelData(chan).addData(getPlayerData(chan));
+                    sendMessageToPlayer(uniqueId, bytes);
+                }
+            } catch (PlayerNotFoundException ignored) {
+            }
         } else if (UNREGISTER.equals(channel)) {
             getPlayerChannels(uniqueId).removeAll(buf.getRegistrations());
         } else {
@@ -30,7 +38,7 @@ public abstract class PlayerSync implements Constants {
             for (Entry<UUID, Set<String>> e : this.playerChannels.entrySet()) {
                 if (e.getKey().equals(uniqueId) || !e.getValue().contains(channel))
                     continue;
-                ChannelData cd = new ChannelData(channel).addData(uniqueId, data);
+                ChannelData cd = newChannelData(channel).addData(uniqueId, data);
                 try {
                     sendMessageToPlayer(e.getKey(), cd);
                 } catch (PlayerNotFoundException ex) {
@@ -42,14 +50,12 @@ public abstract class PlayerSync implements Constants {
                 this.playerChannels.remove(uuid);
             }
         }
+
     }
 
     public void onChannelRegister(UUID uniqueId) {
         try {
-            for (String chan : getPlayerChannels(uniqueId)) {
-                ChannelData bytes = new ChannelData(chan).addData(getPlayerData(chan));
-                sendMessageToPlayer(uniqueId, bytes);
-            }
+            sendAckToPlayer(uniqueId);
         } catch (PlayerNotFoundException ignored) {
         }
     }
@@ -63,9 +69,13 @@ public abstract class PlayerSync implements Constants {
     }
 
     public void removePlayer(UUID uniqueId) {
+        this.playerChannels.remove(uniqueId);
         for (Map<UUID, byte[]> players : this.channels.values()) {
             players.remove(uniqueId);
         }
     }
 
+    protected ChannelData newChannelData(String channel) {
+        return new ChannelData(channel);
+    }
 }
