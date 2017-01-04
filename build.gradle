@@ -3,7 +3,7 @@ plugins {
 }
 
 archivesBaseName = 'playersync-plugin'
-version = '0.2'
+version = '0.3'
 group = 'psync'
 
 targetCompatibility = 1.8
