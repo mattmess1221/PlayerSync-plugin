@@ -1,5 +1,6 @@
 apply plugin: 'net.minecraftforge.gradle.liteloader'
 
+archivesBaseName = 'playersync-client'
 version = '0.1-SNAPSHOT'
 group = 'psync'
 
@@ -9,10 +10,8 @@ minecraft {
     runDir = "run"
 }
 
-litemod.json {
-
-}
 
 jar {
+	baseName "mod-$project.archivesBaseName"
     from litemod
 }
