@@ -9,15 +9,8 @@ group = 'psync'
 targetCompatibility = 1.8
 sourceCompatibility = 1.8
 
-repositories {
-    maven {
-        name = 'spigotmc-repo'
-        url = 'https://hub.spigotmc.org/nexus/content/groups/public/'
-    }
-}
 dependencies {
     compile 'com.google.code.findbugs:jsr305:3.0.1'
 
-    compile 'org.spongepowered:spongeapi:5.0.0'
-    compile 'org.bukkit:bukkit:1.11-R0.1-SNAPSHOT'
+    compile 'org.spongepowered:spongeapi:6.0.0-SNAPSHOT'
 }

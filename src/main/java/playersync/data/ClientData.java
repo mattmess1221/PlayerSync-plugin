@@ -1,41 +1,36 @@
 package playersync.data;
 
+import org.spongepowered.api.network.ChannelBuf;
+
+import java.util.HashSet;
 import java.util.Set;
+import javax.annotation.Nonnull;
 
-public class ClientData {
+public class ClientData extends ChannelDataBase {
 
-    private String channel;
     private byte[] data;
     private Set<String> registrations;
 
-    public ClientData() {
-
+    @Override
+    public void readFrom(@Nonnull ChannelBuf buf) {
+        if (isRegistration()) {
+            this.registrations = readStrings(buf);
+        } else {
+            this.data = buf.readByteArray();
+        }
     }
 
-    public ClientData(String channel, byte[] data) {
-        this.channel = channel;
-        this.data = data;
+    private Set<String> readStrings(ChannelBuf input) {
+        Set<String> strings = new HashSet<>();
+        int size = input.readVarInt();
+        for (int i = 0; i < size; i++) {
+            strings.add(input.readString());
+        }
+        return strings;
     }
 
-    public ClientData(String channel, Set<String> registrations) {
-        this.channel = channel;
-        this.registrations = registrations;
-    }
-
-    protected void setChannel(String channel) {
-        this.channel = channel;
-    }
-
-    protected void setData(byte[] data) {
-        this.data = data;
-    }
-
-    protected void setRegistrations(Set<String> registrations) {
-        this.registrations = registrations;
-    }
-
-    public String getChannel() {
-        return channel;
+    @Override
+    public void writeTo(@Nonnull ChannelBuf buf) {
     }
 
     public byte[] getData() {

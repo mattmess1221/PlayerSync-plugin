@@ -1,81 +1,94 @@
 package playersync;
 
+import static playersync.PlayerSyncPlugin.REGISTER;
+import static playersync.PlayerSyncPlugin.UNREGISTER;
+
+import com.google.common.collect.HashMultimap;
+import org.spongepowered.api.Sponge;
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.network.ChannelBinding;
 import playersync.data.ChannelData;
+import playersync.data.ChannelDataBase;
 import playersync.data.ClientData;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.UUID;
 
-public abstract class PlayerSync implements Constants {
+public class PlayerSync {
 
-    private Map<UUID, Set<String>> playerChannels = new HashMap<>();
+
+    private HashMultimap<UUID, String> playerChannels = HashMultimap.create();
     private Map<String, Map<UUID, byte[]>> channels = new HashMap<>();
 
-    protected abstract void sendAckToPlayer(UUID uniqueId) throws PlayerNotFoundException;
+    private final ChannelBinding.IndexedMessageChannel channel;
 
-    protected abstract void sendMessageToPlayer(UUID uniqueId, ChannelData msg) throws PlayerNotFoundException;
+    public PlayerSync(ChannelBinding.IndexedMessageChannel channel) {
+        this.channel = channel;
+    }
 
-    public void handlePacket(UUID uniqueId, ClientData buf) throws IOException {
+    void handlePacket(Player player, ClientData buf) throws IOException {
+        UUID uniqueId = player.getUniqueId();
         String channel = buf.getChannel();
 
         if (REGISTER.equals(channel)) {
-            Set<String> playerChannels = getPlayerChannels(uniqueId);
-            playerChannels.addAll(buf.getRegistrations());
-            try {
-                for (String chan : playerChannels) {
-                    ChannelData bytes = new ChannelData(chan).addData(getPlayerData(chan));
-                    sendMessageToPlayer(uniqueId, bytes);
-                }
-            } catch (PlayerNotFoundException ignored) {
+            this.playerChannels.putAll(uniqueId, buf.getRegistrations());
+            for (String chan : playerChannels.get(uniqueId)) {
+                ChannelData bytes = new ChannelData(chan, getPlayerData(chan));
+                this.channel.sendTo(player, bytes);
             }
         } else if (UNREGISTER.equals(channel)) {
-            getPlayerChannels(uniqueId).removeAll(buf.getRegistrations());
+            this.playerChannels.get(uniqueId).removeAll(buf.getRegistrations());
         } else {
             byte[] data = buf.getData();
             getPlayerData(channel).put(uniqueId, data);
             Set<UUID> toRemove = new HashSet<>();
-            for (Entry<UUID, Set<String>> e : this.playerChannels.entrySet()) {
-                if (e.getKey().equals(uniqueId) || !e.getValue().contains(channel))
+            for (Entry<UUID, String> e : this.playerChannels.entries()) {
+                UUID id = e.getKey();
+                if (id.equals(uniqueId) || !e.getValue().equals(channel))
                     continue;
-                ChannelData cd = newChannelData(channel).addData(uniqueId, data);
+                ChannelData cd = new ChannelData(channel, uniqueId, data);
                 try {
-                    sendMessageToPlayer(e.getKey(), cd);
+                    Player player2 = getPlayerFromUniqueId(e.getKey());
+                    this.channel.sendTo(player2, cd);
                 } catch (PlayerNotFoundException ex) {
                     getPlayerData(channel).remove(e.getKey());
                     toRemove.add(e.getKey());
                 }
             }
             for (UUID uuid : toRemove) {
-                this.playerChannels.remove(uuid);
+                this.playerChannels.removeAll(uuid);
             }
         }
 
     }
 
-    public void onChannelRegister(UUID uniqueId) {
+    void onChannelRegister(UUID uniqueId) {
         try {
-            sendAckToPlayer(uniqueId);
+            Player player = getPlayerFromUniqueId(uniqueId);
+            channel.sendTo(player, new ChannelDataBase(PlayerSyncPlugin.ACKNOWLEDGE));
         } catch (PlayerNotFoundException ignored) {
         }
     }
 
-    private Set<String> getPlayerChannels(UUID uuid) {
-        return this.playerChannels.computeIfAbsent(uuid, b -> new HashSet<>());
-    }
 
-    public Map<UUID, byte[]> getPlayerData(String channel) {
-        return this.channels.computeIfAbsent(channel, b -> new HashMap<>());
-    }
-
-    public void removePlayer(UUID uniqueId) {
-        this.playerChannels.remove(uniqueId);
+    void removePlayer(UUID uniqueId) {
+        this.playerChannels.removeAll(uniqueId);
         for (Map<UUID, byte[]> players : this.channels.values()) {
             players.remove(uniqueId);
         }
     }
 
-    protected ChannelData newChannelData(String channel) {
-        return new ChannelData(channel);
+    private Map<UUID, byte[]> getPlayerData(String channel) {
+        return this.channels.computeIfAbsent(channel, b -> new HashMap<>());
     }
+
+    private static Player getPlayerFromUniqueId(UUID uniqueId) throws PlayerNotFoundException {
+        return Sponge.getServer().getPlayer(uniqueId).orElseThrow(PlayerNotFoundException::new);
+    }
+
 }
