@@ -1,17 +1,17 @@
-package playersync.data;
+package playersync.sponge.data.server;
 
 import org.spongepowered.api.network.ChannelBuf;
 import org.spongepowered.api.network.Message;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nonnull;
 
 public class SRegisterData implements Message {
 
     private int version;
-    private Set<String> channels = new HashSet<>();
-    private Set<String> settings = new HashSet<>();
+    private List<String> channels = new ArrayList<>();
+    private List<String> settings = new ArrayList<>();
 
     @Override
     public void readFrom(@Nonnull ChannelBuf buf) {
@@ -22,12 +22,13 @@ public class SRegisterData implements Message {
 
     @Override
     public void writeTo(@Nonnull ChannelBuf buf) {
-        // buf.writeVarInt(this.version);
-        // TODO when sponge client is ever done
+         buf.writeVarInt(this.version);
+         writeStrings(buf, this.channels);
+         writeStrings(buf, this.settings);
     }
 
-    private static Set<String> readStrings(ChannelBuf input) {
-        Set<String> strings = new HashSet<>();
+    private static List<String> readStrings(ChannelBuf input) {
+        List<String> strings = new ArrayList<>();
         int size = input.readVarInt();
         for (int i = 0; i < size; i++) {
             strings.add(input.readString());
@@ -35,15 +36,22 @@ public class SRegisterData implements Message {
         return strings;
     }
 
+    private static void writeStrings(ChannelBuf input, List<String> strings) {
+        input.writeVarInt(strings.size());
+        for (String s : strings) {
+            input.writeString(s);
+        }
+    }
+
     public int getVersion() {
         return version;
     }
 
-    public Set<String> getChannels() {
+    public List<String> getChannels() {
         return channels;
     }
 
-    public Set<String> getSettings() {
+    public List<String> getSettings() {
         return settings;
     }
 }

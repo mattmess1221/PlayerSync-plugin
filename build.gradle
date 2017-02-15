@@ -1,16 +1,33 @@
 plugins {
-    id 'org.spongepowered.plugin' version '0.7'
+    id 'org.spongepowered.plugin' version '0.8.1'
+    id 'signing'
 }
 
 archivesBaseName = 'playersync-plugin'
 version = '0.4-SNAPSHOT'
 group = 'psync'
 
-targetCompatibility = 1.8
-sourceCompatibility = 1.8
+repositories {
+    jcenter()
+    maven {
+        url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
+    }
+    maven {
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
+}
 
 dependencies {
     compile 'com.google.code.findbugs:jsr305:3.0.1'
 
-    compile 'org.spongepowered:spongeapi:6.0.0-SNAPSHOT'
+    compileOnly 'org.spongepowered:spongeapi:6.0.0-SNAPSHOT'
+    compileOnly 'org.bukkit:bukkit:1.12-R0.1-SNAPSHOT'
+
+    runtime 'org.spongepowered:spongevanilla:1.12-7.0.0-BETA-288'
+}
+
+sponge.plugin.id = pluginId
+
+signing {
+    sign configurations.archives
 }

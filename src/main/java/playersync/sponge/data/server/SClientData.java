@@ -1,4 +1,4 @@
-package playersync.data;
+package playersync.sponge.data.server;
 
 import org.spongepowered.api.network.ChannelBuf;
 import org.spongepowered.api.network.Message;

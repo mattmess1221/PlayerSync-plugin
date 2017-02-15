@@ -1,4 +1,4 @@
-package playersync.data;
+package playersync.sponge.data.client;
 
 import org.spongepowered.api.data.DataView;
 import org.spongepowered.api.network.ChannelBuf;

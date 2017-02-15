@@ -1,4 +1,4 @@
-package playersync;
+package playersync.sponge;
 
 import com.google.inject.Inject;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
@@ -20,8 +20,10 @@ import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.chat.ChatTypes;
 import org.spongepowered.api.text.format.TextColors;
-import playersync.data.SClientData;
-import playersync.data.SRegisterData;
+import playersync.Channels;
+import playersync.Texts;
+import playersync.sponge.data.server.SClientData;
+import playersync.sponge.data.server.SRegisterData;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,16 +33,12 @@ import java.util.Optional;
         id = "playersync",
         name = "PlayerSync",
         authors = "killjoy1221",
-        version = "0.4-SNAPSHOT",
         description = "Automatically syncs settings between and with client mods."
 )
-public class PlayerSyncPlugin implements ChannelHandler {
+public class PlayerSyncPlugin {
 
-    private static final String CHANNEL_LEGACY = "pSync";
-
-    private ChannelContainer channels;
-    private PlayerSync sync;
-
+    private SpongeData channels;
+    private SpongePlayerSyncServer sync;
 
     @Inject
     @DefaultConfig(sharedRoot = true)
@@ -56,8 +54,8 @@ public class PlayerSyncPlugin implements ChannelHandler {
     @Listener
     public void onServerStart(GameInitializationEvent event) {
 
-        this.channels = new ChannelContainer(this);
-        this.sync = new PlayerSync(this.channels);
+        this.channels = new SpongeData(this);
+        this.sync = new SpongePlayerSyncServer(this.channels);
 
         try {
             this.sync.loadConfig(this.configLoader.load());
@@ -67,14 +65,12 @@ public class PlayerSyncPlugin implements ChannelHandler {
 
     }
 
-    @Override
     public void handleSyncPacket(SClientData message, RemoteConnection connection, Platform.Type side) {
         if (connection instanceof PlayerConnection) {
             sync.handlePacket(((PlayerConnection) connection).getPlayer(), message);
         }
     }
 
-    @Override
     public void handleRegisterPacket(SRegisterData message, RemoteConnection connection, Platform.Type side) {
         if (connection instanceof PlayerConnection) {
             sync.handleRegister(((PlayerConnection) connection).getPlayer(), message);
@@ -85,10 +81,10 @@ public class PlayerSyncPlugin implements ChannelHandler {
     public void onRegister(ChannelRegistrationEvent.Register event, @Getter("getChannel") String channel) {
         Optional<Player> player = event.getCause().get(NamedCause.SOURCE, Player.class);
         switch (channel) {
-            case "pSync|reg":
-                player.map(Player::getUniqueId).ifPresent(sync::onChannelRegister);
+            case Channels.CHANNEL_REG:
+                player.ifPresent(sync::onChannelRegister);
                 break;
-            case CHANNEL_LEGACY:
+            case Channels.CHANNEL_OLD:
                 // legacy (outdated, unsupported)
                 player.ifPresent(this::warnPlayerOfOutdatedMod);
                 break;
@@ -96,13 +92,12 @@ public class PlayerSyncPlugin implements ChannelHandler {
     }
 
     private void warnPlayerOfOutdatedMod(Player player) {
-        player.sendMessage(ChatTypes.SYSTEM, Text.of(TextColors.YELLOW,
-                "Your version of PlayerSync is outdated. Please update to use it on this server"));
+        player.sendMessage(ChatTypes.SYSTEM, Text.of(TextColors.YELLOW, Texts.OUTDATED));
     }
 
     @Listener
     public void onPlayerLeave(ClientConnectionEvent.Disconnect event, @Getter("getTargetEntity") Player player) {
-        sync.removePlayer(player.getUniqueId());
+        sync.removePlayer(player);
     }
 
     @Listener

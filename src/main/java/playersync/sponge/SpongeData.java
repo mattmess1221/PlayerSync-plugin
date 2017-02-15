@@ -1,16 +1,17 @@
-package playersync;
+package playersync.sponge;
 
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.network.ChannelBinding;
-import playersync.data.CChannelData;
-import playersync.data.CHelloData;
-import playersync.data.CSettingsData;
-import playersync.data.SClientData;
-import playersync.data.SRegisterData;
+import org.spongepowered.api.network.ChannelRegistrar;
+import playersync.Channels;
+import playersync.sponge.data.client.CChannelData;
+import playersync.sponge.data.client.CHelloData;
+import playersync.sponge.data.client.CSettingsData;
+import playersync.sponge.data.server.SClientData;
+import playersync.sponge.data.server.SRegisterData;
 
-// POJO
-public class ChannelContainer {
+public class SpongeData implements Channels {
 
     private static final String CHANNEL_OLD = "pSync";
     private static final String CHANNEL_REG = "pSync|reg";
@@ -21,18 +22,20 @@ public class ChannelContainer {
     private ChannelBinding.IndexedMessageChannel clientData;
     private ChannelBinding.IndexedMessageChannel settings;
 
-    public ChannelContainer(ChannelHandler plugin) {
-        Sponge.getChannelRegistrar().createChannel(plugin, CHANNEL_OLD);
+    public SpongeData(PlayerSyncPlugin plugin) {
+        ChannelRegistrar reg = Sponge.getChannelRegistrar();
 
-        clientData = Sponge.getChannelRegistrar().createChannel(plugin, CHANNEL_DATA);
+        reg.createChannel(plugin, CHANNEL_OLD);
+
+        clientData = reg.createChannel(plugin, CHANNEL_DATA);
         clientData.registerMessage(CChannelData.class, 1);
-        clientData.addHandler(SClientData.class, plugin::handleSyncPacket);
+        clientData.registerMessage(SClientData.class, 2, plugin::handleSyncPacket);
 
-        register = Sponge.getChannelRegistrar().createChannel(plugin, CHANNEL_REG);
-        register.addHandler(SRegisterData.class, plugin::handleRegisterPacket);
+        register = reg.createChannel(plugin, CHANNEL_REG);
         register.registerMessage(CHelloData.class, 1);
+        register.registerMessage(SRegisterData.class, 2, plugin::handleRegisterPacket);
 
-        settings = Sponge.getChannelRegistrar().createChannel(plugin, CHANNEL_CONF);
+        settings = reg.createChannel(plugin, CHANNEL_CONF);
         settings.registerMessage(CSettingsData.class, 1);
     }
 

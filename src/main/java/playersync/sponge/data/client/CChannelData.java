@@ -1,40 +1,38 @@
-package playersync.data;
+package playersync.sponge.data.client;
 
-import com.google.common.collect.Lists;
 import org.spongepowered.api.network.ChannelBuf;
 import org.spongepowered.api.network.Message;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 public class CChannelData implements Message {
 
     private String channel;
-    private List<PlayerData> data = Lists.newArrayList();
+    private List<PlayerData> data;
 
-    public CChannelData() {
-    }
-
-    public CChannelData(String channel, UUID uuid, byte[] data) {
+    public CChannelData(String channel, UUID uniqueId, byte[] data) {
         this.channel = channel;
-        this.data.add(new PlayerData(uuid, data));
+        this.data = Collections.singletonList(new PlayerData(uniqueId, data));
     }
-
     public CChannelData(String channel, Map<UUID, byte[]> data) {
         this.channel = channel;
-        for (Map.Entry<UUID, byte[]> e : data.entrySet()) {
-            this.data.add(new PlayerData(e.getKey(), e.getValue()));
-        }
+        this.data = data.entrySet().stream()
+                .map(PlayerData::new)
+                .collect(Collectors.toList());
     }
+
 
     @Override
     public void writeTo(@Nonnull ChannelBuf buf) {
         buf.writeString(channel);
         buf.writeVarInt(data.size());
         for (PlayerData player : data) {
-            buf.writeUniqueId(player.id);
+            buf.writeUniqueId(player.uuid);
             buf.writeByteArray(player.data);
         }
     }
@@ -58,16 +56,18 @@ public class CChannelData implements Message {
         return data;
     }
 
-    public static class PlayerData {
+    private static class PlayerData {
+        private UUID uuid;
+        private byte[] data;
 
-        private final UUID id;
-        private final byte[] data;
-
-        private PlayerData(UUID id, byte[] data) {
-
-            this.id = id;
-            this.data = data;
+        private PlayerData(Map.Entry<UUID, byte[]> data) {
+            this(data.getKey(), data.getValue());
         }
 
+        private PlayerData(UUID uuid, byte[] data) {
+            this.uuid = uuid;
+            this.data = data;
+        }
     }
+
 }
