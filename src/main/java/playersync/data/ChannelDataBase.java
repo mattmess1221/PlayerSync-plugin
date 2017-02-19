@@ -1,12 +1,11 @@
 package playersync.data;
 
-import static playersync.PlayerSyncPlugin.REGISTER;
-import static playersync.PlayerSyncPlugin.UNREGISTER;
-
 import org.spongepowered.api.network.ChannelBuf;
 import org.spongepowered.api.network.Message;
 
-public class ChannelDataBase implements Message {
+import javax.annotation.Nonnull;
+
+public abstract class ChannelDataBase implements Message {
 
     private String channel;
 
@@ -19,20 +18,26 @@ public class ChannelDataBase implements Message {
     }
 
     @Override
-    public void readFrom(ChannelBuf buf) {
+    public final void readFrom(@Nonnull ChannelBuf buf) {
         this.channel = buf.readString();
+        read(buf);
+    }
+
+    protected void read(@Nonnull ChannelBuf buf) {
     }
 
     @Override
-    public void writeTo(ChannelBuf buf) {
+    public final void writeTo(@Nonnull ChannelBuf buf) {
         buf.writeString(this.channel);
+        write(buf);
+    }
+
+    protected void write(@Nonnull ChannelBuf buf) {
     }
 
     public String getChannel() {
         return channel;
     }
 
-    public boolean isRegistration() {
-        return REGISTER.equals(channel) || UNREGISTER.equals(channel);
-    }
+
 }
