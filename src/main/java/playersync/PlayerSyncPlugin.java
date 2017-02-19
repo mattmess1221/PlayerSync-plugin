@@ -17,22 +17,26 @@ import org.spongepowered.api.event.network.ClientConnectionEvent;
 import org.spongepowered.api.network.PlayerConnection;
 import org.spongepowered.api.network.RemoteConnection;
 import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.chat.ChatTypes;
+import org.spongepowered.api.text.format.TextColors;
 import playersync.data.SClientData;
 import playersync.data.SRegisterData;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Optional;
 
 @Plugin(
         id = "playersync",
         name = "PlayerSync",
         authors = "killjoy1221",
-        version = "0.1-SNAPSHOT",
+        version = "0.4-SNAPSHOT",
         description = "Automatically syncs settings between and with client mods."
 )
 public class PlayerSyncPlugin implements ChannelHandler {
 
-    private static final String CHANNEL = "pSync";
+    private static final String CHANNEL_LEGACY = "pSync";
 
     private ChannelContainer channels;
     private PlayerSync sync;
@@ -79,11 +83,21 @@ public class PlayerSyncPlugin implements ChannelHandler {
 
     @Listener
     public void onRegister(ChannelRegistrationEvent.Register event, @Getter("getChannel") String channel) {
-        if (CHANNEL.equals(channel))
-            event.getCause()
-                .get(NamedCause.SOURCE, Player.class)
-                    .map(Player::getUniqueId)
-                    .ifPresent(sync::onChannelRegister);
+        Optional<Player> player = event.getCause().get(NamedCause.SOURCE, Player.class);
+        switch (channel) {
+            case "pSync|reg":
+                player.map(Player::getUniqueId).ifPresent(sync::onChannelRegister);
+                break;
+            case CHANNEL_LEGACY:
+                // legacy (outdated, unsupported)
+                player.ifPresent(this::warnPlayerOfOutdatedMod);
+                break;
+        }
+    }
+
+    private void warnPlayerOfOutdatedMod(Player player) {
+        player.sendMessage(ChatTypes.SYSTEM, Text.of(TextColors.YELLOW,
+                "Your version of PlayerSync is outdated. Please update to use it on this server"));
     }
 
     @Listener

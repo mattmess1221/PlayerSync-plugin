@@ -8,8 +8,11 @@ import org.spongepowered.api.data.DataQuery;
 import org.spongepowered.api.data.DataView;
 import org.spongepowered.api.data.MemoryDataContainer;
 import org.spongepowered.api.entity.living.player.Player;
-import playersync.data.CAwkData;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.chat.ChatTypes;
+import org.spongepowered.api.text.format.TextColors;
 import playersync.data.CChannelData;
+import playersync.data.CHelloData;
 import playersync.data.CSettingsData;
 import playersync.data.SClientData;
 import playersync.data.SRegisterData;
@@ -23,6 +26,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class PlayerSync {
+
+    private static final int PROTOCOL = 2;
 
     private HashMultimap<UUID, String> playerChannels = HashMultimap.create();
     private HashMultimap<UUID, String> playerSettings = HashMultimap.create();
@@ -38,6 +43,11 @@ public class PlayerSync {
     }
 
     void handleRegister(Player player, SRegisterData data) {
+        if (data.getVersion() != PROTOCOL) {
+            player.sendMessage(ChatTypes.SYSTEM, Text.of(TextColors.YELLOW,
+                    "Your version of PlayerSync is outdated. Please update to use it on this server."));
+            return;
+        }
         UUID uniqueId = player.getUniqueId();
         this.playerChannels.putAll(uniqueId, data.getChannels());
         this.playerSettings.putAll(uniqueId, data.getSettings());
@@ -83,7 +93,7 @@ public class PlayerSync {
     void onChannelRegister(UUID uniqueId) {
         try {
             Player player = getPlayerFromUniqueId(uniqueId);
-            channel.sendRegistration(player, new CAwkData());
+            channel.sendRegistration(player, new CHelloData(PROTOCOL));
         } catch (PlayerNotFoundException ignored) {
         }
     }
