@@ -71,7 +71,6 @@ public class PlayerSyncPlugin {
     }
 
     public void handleSyncPacket(IClientData message, RemoteConnection connection, Platform.Type side) {
-        System.out.println("Packet for " + connection);
         if (connection instanceof PlayerConnection) {
             sync.handlePacket(((PlayerConnection) connection).getPlayer(), message);
         }

@@ -4,7 +4,7 @@ plugins {
 }
 
 archivesBaseName = 'playersync-plugin'
-version = '0.4-SNAPSHOT'
+version = '1.0'
 group = 'psync'
 
 repositories {
@@ -20,10 +20,10 @@ repositories {
 dependencies {
     compile 'com.google.code.findbugs:jsr305:3.0.1'
 
-    compile 'org.spongepowered:spongeapi:6.0.0-SNAPSHOT'
+    compile 'org.spongepowered:spongeapi:7.0.0-SNAPSHOT'
     compileOnly 'org.bukkit:bukkit:1.12-R0.1-SNAPSHOT'
 
-    runtime 'org.spongepowered:spongevanilla:1.12-7.0.0-BETA-288'
+    runtime('org.spongepowered:spongevanilla:1.12.1-7.0.0-BETA-320')
 }
 
 sponge.plugin.id = pluginId
