@@ -1,7 +1,8 @@
 package playersync.sponge.data.client;
 
 import org.spongepowered.api.network.ChannelBuf;
-import org.spongepowered.api.network.Message;
+import playersync.data.client.IChannelData;
+import playersync.sponge.data.SpongeData;
 
 import java.util.Collections;
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
-public class CChannelData implements Message {
+public class CChannelData implements SpongeData, IChannelData {
 
     private String channel;
     private List<PlayerData> data;
@@ -48,26 +49,15 @@ public class CChannelData implements Message {
         }
     }
 
+    @Override
     public String getChannel() {
         return channel;
     }
 
+    @Override
     public List<PlayerData> getData() {
         return data;
     }
 
-    private static class PlayerData {
-        private UUID uuid;
-        private byte[] data;
-
-        private PlayerData(Map.Entry<UUID, byte[]> data) {
-            this(data.getKey(), data.getValue());
-        }
-
-        private PlayerData(UUID uuid, byte[] data) {
-            this.uuid = uuid;
-            this.data = data;
-        }
-    }
 
 }

@@ -1,33 +1,30 @@
 package playersync.sponge;
 
 import com.google.inject.Inject;
-import ninja.leaping.configurate.commented.CommentedConfigurationNode;
-import ninja.leaping.configurate.loader.ConfigurationLoader;
 import org.slf4j.Logger;
 import org.spongepowered.api.Platform;
-import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.event.filter.Getter;
-import org.spongepowered.api.event.game.GameReloadEvent;
+import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.event.network.ChannelRegistrationEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
+import org.spongepowered.api.network.ChannelBuf;
 import org.spongepowered.api.network.PlayerConnection;
 import org.spongepowered.api.network.RemoteConnection;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.chat.ChatTypes;
 import org.spongepowered.api.text.format.TextColors;
 import playersync.Channels;
+import playersync.OutdatedClientException;
+import playersync.PlayerSyncServer;
 import playersync.Texts;
-import playersync.sponge.data.server.SClientData;
-import playersync.sponge.data.server.SRegisterData;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Optional;
+import playersync.adapters.Adapters;
+import playersync.adapters.DataAdapter;
+import playersync.adapters.PlayerAdapter;
+import playersync.data.server.IClientData;
+import playersync.data.server.IRegisterData;
 
 @Plugin(
         id = "playersync",
@@ -37,16 +34,15 @@ import java.util.Optional;
 )
 public class PlayerSyncPlugin {
 
-    private SpongeData channels;
-    private SpongePlayerSyncServer sync;
+    private PlayerSyncServer<Player, ChannelBuf> sync;
 
-    @Inject
-    @DefaultConfig(sharedRoot = true)
-    private Path configPath;
-
-    @Inject
-    @DefaultConfig(sharedRoot = true)
-    private ConfigurationLoader<CommentedConfigurationNode> configLoader;
+//    @Inject
+//    @DefaultConfig(sharedRoot = true)
+//    private Path configPath;
+//
+//    @Inject
+//    @DefaultConfig(sharedRoot = true)
+//    private ConfigurationLoader<CommentedConfigurationNode> configLoader;
 
     @Inject
     private Logger logger;
@@ -54,59 +50,65 @@ public class PlayerSyncPlugin {
     @Listener
     public void onServerStart(GameInitializationEvent event) {
 
-        this.channels = new SpongeData(this);
-        this.sync = new SpongePlayerSyncServer(this.channels);
+        this.registerAdapters();
 
-        try {
-            this.sync.loadConfig(this.configLoader.load());
-        } catch (IOException e) {
-            logger.warn("Unable to read config", e);
-        }
+        SpongeChannels channels = new SpongeChannels(this);
+        this.sync = new PlayerSyncServer<>(channels);
+
+//        try {
+//            this.sync.loadConfig(this.configLoader.load());
+//        } catch (IOException e) {
+//            logger.warn("Unable to read config", e);
+//        }
 
     }
 
-    public void handleSyncPacket(SClientData message, RemoteConnection connection, Platform.Type side) {
+    private void registerAdapters() {
+
+        Adapters.register(DataAdapter.class, new SpongeDataAdapter());
+        Adapters.register(PlayerAdapter.class, new SpongePlayerAdapter());
+
+    }
+
+    public void handleSyncPacket(IClientData message, RemoteConnection connection, Platform.Type side) {
+        System.out.println("Packet for " + connection);
         if (connection instanceof PlayerConnection) {
             sync.handlePacket(((PlayerConnection) connection).getPlayer(), message);
         }
     }
 
-    public void handleRegisterPacket(SRegisterData message, RemoteConnection connection, Platform.Type side) {
+    public void handleRegisterPacket(IRegisterData message, RemoteConnection connection, Platform.Type side) {
         if (connection instanceof PlayerConnection) {
-            sync.handleRegister(((PlayerConnection) connection).getPlayer(), message);
+            Player player = ((PlayerConnection) connection).getPlayer();
+            try {
+                sync.handleRegister(player, message);
+            } catch (OutdatedClientException e) {
+                player.sendMessage(Text.of(TextColors.YELLOW, Texts.OUTDATED));
+                logger.info("{} tried to join with outdated playersync mod. Version: {}", player.getName(), e.getVersion());
+            }
         }
     }
 
     @Listener
-    public void onRegister(ChannelRegistrationEvent.Register event, @Getter("getChannel") String channel) {
-        Optional<Player> player = event.getCause().get(NamedCause.SOURCE, Player.class);
-        switch (channel) {
-            case Channels.CHANNEL_REG:
-                player.ifPresent(sync::onChannelRegister);
-                break;
-            case Channels.CHANNEL_OLD:
-                // legacy (outdated, unsupported)
-                player.ifPresent(this::warnPlayerOfOutdatedMod);
-                break;
+    public void onRegister(ChannelRegistrationEvent.Register event, @Getter("getChannel") String channel, @First Player player) {
+        System.out.println(player.getName() + " is registered for " + channel);
+        if (Channels.CHANNEL.equals(channel)) {
+            sync.onChannelRegister(player);
         }
-    }
-
-    private void warnPlayerOfOutdatedMod(Player player) {
-        player.sendMessage(ChatTypes.SYSTEM, Text.of(TextColors.YELLOW, Texts.OUTDATED));
     }
 
     @Listener
     public void onPlayerLeave(ClientConnectionEvent.Disconnect event, @Getter("getTargetEntity") Player player) {
-        sync.removePlayer(player);
+        sync.removePlayer(player.getUniqueId());
     }
 
-    @Listener
-    public void configReload(GameReloadEvent reload) {
-        try {
-            this.sync.loadConfig(this.configLoader.load());
-        } catch (IOException e) {
-            this.logger.warn("Unable to load config", e);
-        }
-    }
+//    @Listener
+//    public void configReload(GameReloadEvent reload) {
+//        try {
+//            this.sync.loadConfig(this.configLoader.load());
+//        } catch (IOException e) {
+//            this.logger.warn("Unable to load config", e);
+//        }
+//    }
 
 }

@@ -9,66 +9,68 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRegisterChannelEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import playersync.Channels;
+import playersync.OutdatedClientException;
+import playersync.PlayerSyncServer;
 import playersync.Texts;
+import playersync.adapters.Adapters;
+import playersync.adapters.DataAdapter;
+import playersync.adapters.PlayerAdapter;
+import playersync.bukkit.data.IServerDataHandler;
 import playersync.bukkit.data.client.SClientData;
 import playersync.bukkit.data.client.SRegisterData;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
+import java.nio.ByteBuffer;
 
 
-public class PlayerSyncPlugin extends JavaPlugin implements Listener {
+public class PlayerSyncPlugin extends JavaPlugin implements Listener, IServerDataHandler {
 
-    private BukkitData channels;
-    private BukkitPlayerSyncServer sync;
+    private PlayerSyncServer<Player, ? extends ByteBuffer> sync;
 
     @Override
     public void onLoad() {
-        this.channels = new BukkitData(this);
-        this.sync = new BukkitPlayerSyncServer(channels);
+
+        registerAdapters();
+
+        BukkitChannels channels = new BukkitChannels(this);
+        this.sync = new PlayerSyncServer<>(channels);
 
         Bukkit.getPluginManager().registerEvents(this, this);
 
     }
 
-    public void handleSyncPacket(String s, Player player, byte[] bytes) {
-        sync.handlePacket(player, moreData(bytes, SClientData::new));
-    }
+    private void registerAdapters() {
 
-    public void handleRegisterPacket(String s, Player player, byte[] bytes) {
-        sync.handleRegister(player, moreData(bytes, SRegisterData::new));
-    }
+        Adapters.register(DataAdapter.class, new BukkitDataAdapter());
+        Adapters.register(PlayerAdapter.class, new BukkitPlayerAdapter());
 
-    private interface DataConst<T> {
-        T newInstance(ByteArrayInputStream buffer) throws IOException;
-    }
-
-    private <T> T moreData(byte[] bytes, DataConst<T> constructor) {
-        try(ByteArrayInputStream in = new ByteArrayInputStream(bytes)) {
-            return constructor.newInstance(in);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @EventHandler
     public void onRegister(PlayerRegisterChannelEvent event) {
         Player player = event.getPlayer();
-        switch (event.getChannel()) {
-            case Channels.CHANNEL_REG:
-                sync.onChannelRegister(player);
-                break;
-            case Channels.CHANNEL_OLD:
-                // legacy (outdated, unsupported)
-                player.sendMessage(ChatColor.YELLOW + Texts.OUTDATED);
-                break;
+        if (Channels.CHANNEL.equals(event.getChannel())) {
+            sync.onChannelRegister(player);
         }
-
     }
 
     @EventHandler
     public void onPlayerLeave(PlayerQuitEvent event) {
-        sync.removePlayer(event.getPlayer());
+        sync.removePlayer(event.getPlayer().getUniqueId());
     }
 
+    @Override
+    public void handleRegisterData(Player player, SRegisterData sRegisterData) {
+        try {
+            sync.handleRegister(player, sRegisterData);
+        } catch (OutdatedClientException e) {
+            player.sendMessage(ChatColor.YELLOW + Texts.OUTDATED);
+            getLogger().info(player.getName() + " joined with outdated playersync mod. Version: " + e.getVersion());
+
+        }
+    }
+
+    @Override
+    public void handleClientData(Player player, SClientData sClientData) {
+        sync.handlePacket(player, sClientData);
+    }
 }

@@ -1,11 +1,12 @@
 package playersync.sponge.data.client;
 
 import org.spongepowered.api.network.ChannelBuf;
-import org.spongepowered.api.network.Message;
+import playersync.data.client.IHelloData;
+import playersync.sponge.data.SpongeData;
 
 import javax.annotation.Nonnull;
 
-public class CHelloData implements Message {
+public class CHelloData implements SpongeData, IHelloData {
 
     private int version;
 
@@ -21,5 +22,10 @@ public class CHelloData implements Message {
     @Override
     public void writeTo(@Nonnull ChannelBuf buf) {
         buf.writeVarInt(version);
+    }
+
+    @Override
+    public int getVersion() {
+        return version;
     }
 }

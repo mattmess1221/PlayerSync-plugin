@@ -1,28 +1,42 @@
 package playersync.bukkit.data.client;
 
+import org.bukkit.entity.Player;
 import playersync.bukkit.data.BufferUtils;
+import playersync.bukkit.data.BukkitData;
+import playersync.bukkit.data.IServerDataHandler;
+import playersync.data.server.IRegisterData;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-import javax.annotation.Nonnull;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
-public class SRegisterData {
+public class SRegisterData implements IRegisterData, BukkitData<IServerDataHandler> {
 
     private int version;
-    private Set<String> channels = new HashSet<>();
-    private Set<String> settings = new HashSet<>();
+    private List<String> channels = new ArrayList<>();
 
-    public SRegisterData(@Nonnull ByteArrayInputStream buf) throws IOException {
+    @Override
+    public void read(ByteBuffer buf) throws IOException {
         this.version = BufferUtils.readVarInt(buf);
         this.channels = readStrings(buf);
-        // not supported on bukkit, but I'll read it anyway
-        this.settings = readStrings(buf);
     }
 
-    private static Set<String> readStrings(ByteArrayInputStream input) throws IOException {
-        Set<String> strings = new HashSet<>();
+    @Override
+    public void write(ByteBuffer byteBuffer) throws IOException {
+        BufferUtils.writeVarInt(byteBuffer, this.version);
+        writeStrings(byteBuffer, this.channels);
+    }
+
+    private static void writeStrings(ByteBuffer buffer, List<String> strings) throws IOException {
+        BufferUtils.writeVarInt(buffer, strings.size());
+        for (String s : strings) {
+            BufferUtils.writeString(buffer, s);
+        }
+    }
+
+    private static List<String> readStrings(ByteBuffer input) throws IOException {
+        List<String> strings = new ArrayList<>();
         int size = BufferUtils.readVarInt(input);
         for (int i = 0; i < size; i++) {
             strings.add(BufferUtils.readString(input));
@@ -30,11 +44,18 @@ public class SRegisterData {
         return strings;
     }
 
+    @Override
+    public void handle(Player player, IServerDataHandler handler) {
+        handler.handleRegisterData(player, this);
+    }
+
+    @Override
     public int getVersion() {
         return version;
     }
 
-    public Set<String> getChannels() {
+    @Override
+    public List<String> getChannels() {
         return channels;
     }
 

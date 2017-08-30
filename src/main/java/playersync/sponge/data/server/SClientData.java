@@ -1,11 +1,12 @@
 package playersync.sponge.data.server;
 
 import org.spongepowered.api.network.ChannelBuf;
-import org.spongepowered.api.network.Message;
+import playersync.data.server.IClientData;
+import playersync.sponge.data.SpongeData;
 
 import javax.annotation.Nonnull;
 
-public class SClientData implements Message {
+public class SClientData implements SpongeData, IClientData {
 
     private String channel;
     private byte[] data;
@@ -19,13 +20,15 @@ public class SClientData implements Message {
     @Override
     public void writeTo(@Nonnull ChannelBuf buf) {
         buf.writeString(channel);
-        buf.writeByteArray(data);
+        buf.writeBytes(data);
     }
 
+    @Override
     public byte[] getData() {
         return data;
     }
 
+    @Override
     public String getChannel() {
         return channel;
     }

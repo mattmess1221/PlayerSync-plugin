@@ -20,7 +20,7 @@ repositories {
 dependencies {
     compile 'com.google.code.findbugs:jsr305:3.0.1'
 
-    compileOnly 'org.spongepowered:spongeapi:6.0.0-SNAPSHOT'
+    compile 'org.spongepowered:spongeapi:6.0.0-SNAPSHOT'
     compileOnly 'org.bukkit:bukkit:1.12-R0.1-SNAPSHOT'
 
     runtime 'org.spongepowered:spongevanilla:1.12-7.0.0-BETA-288'

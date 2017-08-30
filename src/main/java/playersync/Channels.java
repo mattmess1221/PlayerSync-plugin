@@ -1,10 +1,10 @@
 package playersync;
 
-public interface Channels {
+import playersync.data.Data;
 
-    String CHANNEL_OLD = "pSync";
-    String CHANNEL_REG = "pSync|reg";
-    String CHANNEL_DATA = "pSync|data";
-    String CHANNEL_CONF = "pSync|conf";
+public interface Channels<Player, Buffer> {
 
+    String CHANNEL = "pSync";
+
+    void sendData(Player uuid, Data<Buffer> data);
 }
