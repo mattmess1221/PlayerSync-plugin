@@ -19,13 +19,13 @@ import playersync.data.Data;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.logging.Level;
 
 public class BukkitChannels implements Channels<Player, ByteBuffer> {
 
 
     private final PlayerSyncPlugin plugin;
-    private IServerDataHandler dataHandler;
 
     private BiMap<Integer, Class<? extends BukkitData<?>>> dataPackets = HashBiMap.create();
 
@@ -59,7 +59,7 @@ public class BukkitChannels implements Channels<Player, ByteBuffer> {
                 throw new IOException(dataClass + " did not read the entire packet.");
             }
 
-            data.handle(player, this.dataHandler);
+            data.handle(player, this.plugin);
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Unable to process packet.", e);
         }
@@ -72,11 +72,11 @@ public class BukkitChannels implements Channels<Player, ByteBuffer> {
             int index = dataPackets.inverse().getOrDefault(data.getClass(), -1);
             checkArgument(index >= 0, "%s is not a registered data packet.", data.getClass());
 
-            ByteBuffer buffer = ByteBuffer.allocate(Short.MAX_VALUE);
+            ByteBuffer buffer = ByteBuffer.allocate(Short.MAX_VALUE - 1);
             buffer.put((byte) index);
             data.write(buffer);
 
-            player.sendPluginMessage(plugin, CHANNEL, buffer.compact().array());
+            player.sendPluginMessage(plugin, CHANNEL, Arrays.copyOf(buffer.array(), buffer.position()));
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Unable to send packet.", e);
         }

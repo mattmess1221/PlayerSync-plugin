@@ -28,8 +28,11 @@ public class PlayerSyncPlugin extends JavaPlugin implements Listener, IServerDat
 
     @Override
     public void onLoad() {
-
         registerAdapters();
+    }
+
+    @Override
+    public void onEnable() {
 
         BukkitChannels channels = new BukkitChannels(this);
         this.sync = new PlayerSyncServer<>(channels);

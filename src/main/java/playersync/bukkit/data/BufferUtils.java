@@ -3,6 +3,7 @@ package playersync.bukkit.data;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 public final class BufferUtils {
@@ -21,7 +22,7 @@ public final class BufferUtils {
         try {
             byte[] bytes = new byte[i];
             buffer.get(bytes);
-            String s = new String(bytes, "utf-8");
+            String s = new String(bytes, StandardCharsets.UTF_8);
             if (s.length() > MAX_STRING_LENGTH) {
                 throw new IOException("The received string length is longer than maximum allowed (" + s.length() + " > " + MAX_STRING_LENGTH + ")");
             } else {
@@ -36,12 +37,12 @@ public final class BufferUtils {
 
     public static void writeString(ByteBuffer buffer, String string) throws IOException {
         try {
-            byte[] abyte = string.getBytes("utf-8");
+            byte[] abyte = string.getBytes(StandardCharsets.UTF_8);
             if (abyte.length > 32767) {
                 throw new IOException("String too big (was " + abyte.length + " bytes encoded, max " + 32767 + ")");
             } else {
                 writeVarInt(buffer, abyte.length);
-                buffer.get(abyte, 0, abyte.length);
+                buffer.put(abyte, 0, abyte.length);
             }
         } catch (UnsupportedEncodingException e) {
             throw new IOException(e);

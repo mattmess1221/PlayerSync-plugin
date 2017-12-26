@@ -1,3 +1,3 @@
 name: PlayerSync
-version: 1.0
-main: playersync.bukkit.PlayerSyncBukkit
+version: 1.0.1
+main: playersync.bukkit.PlayerSyncPlugin
